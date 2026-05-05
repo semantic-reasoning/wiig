@@ -1,10 +1,10 @@
 # ----------------------------------------------------------------------------
 # Public headers (installed under ${includedir}/wiig/)
 # ----------------------------------------------------------------------------
+# wiig.h is the single umbrella header. Consumers include only
+# `<wiig/wiig.h>`; no other wiig header is part of the public surface.
 wiig_public_headers = files(
   'wiig.h',
-  'wiig-types.h',
-  'wiig-export.h',
 )
 
 # ----------------------------------------------------------------------------

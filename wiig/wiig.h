@@ -5,26 +5,60 @@
 #define WIIG_H
 
 /*
- * wiig.h is the umbrella header for the public wiig API.
+ * wiig.h — single public umbrella header for libwiig.
  *
- * Downstream users include only this header:
+ * Consumers include only this header:
  *
  *     #include <wiig/wiig.h>
  *
- * Sub-headers (wiig-export.h, wiig-types.h) are installed for compatibility
- * with packagers but should not be included directly by consumers.
+ * No other wiig header is part of the public surface, and consumers
+ * MUST NOT include any other wiig file directly. Internal sub-headers
+ * (visibility macros, internal types, lexer / CST / parser / format /
+ * highlight) are not installed.
  */
 
-#include <wiig/wiig-export.h>
-#include <wiig/wiig-types.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* ======================================================================== */
+/* Symbol visibility                                                        */
+/* ======================================================================== */
+
+/*
+ * WIIG_PUBLIC annotates every exported declaration. The library target is
+ * built with -DWIIG_BUILDING and gnu_symbol_visibility=hidden; consumers
+ * compile without WIIG_BUILDING so dllimport / default-visibility resolve
+ * correctly.
+ */
+#if defined(_WIN32) || defined(__CYGWIN__)
+  #ifdef WIIG_BUILDING
+    #define WIIG_PUBLIC __declspec(dllexport)
+  #else
+    #define WIIG_PUBLIC __declspec(dllimport)
+  #endif
+#elif defined(__GNUC__) && __GNUC__ >= 4
+  #define WIIG_PUBLIC __attribute__((visibility("default")))
+#else
+  #define WIIG_PUBLIC
+#endif
+
+/* ======================================================================== */
 /* Version                                                                  */
 /* ======================================================================== */
+
+#define WIIG_VERSION_MAJOR 0
+#define WIIG_VERSION_MINOR 1
+#define WIIG_VERSION_PATCH 0
+
+#define WIIG_VERSION                                  \
+        (WIIG_VERSION_MAJOR * 10000                   \
+         + WIIG_VERSION_MINOR * 100                   \
+         + WIIG_VERSION_PATCH)
 
 /**
  * wiig_version_string:
