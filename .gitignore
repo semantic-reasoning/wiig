@@ -1,0 +1,61 @@
+# Build directories (match all builddir/build prefixes)
+builddir/
+builddir-*/
+build/
+build-*/
+dist/
+*.o
+*.a
+*.so
+*.so.*
+*.dylib
+*.dll
+
+# Meson build artifacts
+meson-logs/
+meson-private/
+compile_commands.json
+.ninja_deps
+.ninja_log
+build.ninja
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.kate-swp
+.clangd/
+.cache/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.tox/
+
+# Temporary files
+*.tmp
+*.bak
+.#*
+
+# Test artifacts
+*.gcda
+*.gcno
+coverage.html
+
+# Subproject dependencies (managed by wrap mechanism, not committed)
+subprojects/packagecache/
+
+# Uncrustify backup output
+*.uncrustify
+
+# OMC and Claude Code state
+.omc/
+.claude/
+
+# OS specific
+.DS_Store
+Thumbs.db

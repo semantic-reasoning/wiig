@@ -1,0 +1,8 @@
+option('tests',
+  type : 'boolean',
+  value : true,
+  description : 'Build and run the unit-test harness.',
+)
+
+# Meson provides a built-in `werror` option (set via `-Dwerror=true` or
+# `--werror`). We rely on that instead of redefining it here.
