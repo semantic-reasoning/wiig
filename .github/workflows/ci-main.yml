@@ -69,6 +69,12 @@ jobs:
           DESTDIR=/tmp/stage meson install -C builddir
           test -f /tmp/stage/usr/local/include/wiig/wiig.h
           test "$(find /tmp/stage/usr/local/include -type f | wc -l)" = "1"
+          # libdir varies with the host: Debian/Ubuntu use multiarch
+          # (lib/x86_64-linux-gnu), Arch and Fedora use a flat lib/.
+          # Discover the install paths instead of hardcoding them.
+          pcdir=$(dirname "$(find /tmp/stage -name 'wiig.pc' -type f | head -n1)")
+          libdir=$(dirname "$(find /tmp/stage -name 'libwiig.so.0' | head -n1)")
+          test -n "$pcdir" -a -n "$libdir"
           cat > /tmp/consumer.c <<'EOF'
           #include <stdio.h>
           #include <wiig/wiig.h>
@@ -78,8 +84,8 @@ jobs:
               return 0;
           }
           EOF
-          export PKG_CONFIG_PATH=/tmp/stage/usr/local/lib/pkgconfig
-          export LD_LIBRARY_PATH=/tmp/stage/usr/local/lib
+          export PKG_CONFIG_PATH="$pcdir"
+          export LD_LIBRARY_PATH="$libdir"
           cflags=$(pkg-config --define-variable=prefix=/tmp/stage/usr/local --cflags wiig)
           libs=$(pkg-config --define-variable=prefix=/tmp/stage/usr/local --libs wiig)
           gcc -Wall -Wextra -Werror /tmp/consumer.c -o /tmp/consumer $cflags $libs
