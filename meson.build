@@ -43,12 +43,16 @@ endif
 # pkg-config
 # ----------------------------------------------------------------------------
 pkg = import('pkgconfig')
+# Cflags resolves to `-I${includedir}` so that consumers using the
+# documented include form `#include <wiig/wiig.h>` (which the umbrella
+# header itself uses for `<wiig/wiig-export.h>`) compile against the
+# installed headers via `pkg-config --cflags wiig`. Setting `subdirs`
+# would produce `-I${includedir}/wiig` and break that include style.
 pkg.generate(libwiig,
   name        : meson.project_name(),
   description : project_description,
   version     : meson.project_version(),
   filebase    : meson.project_name(),
-  subdirs     : meson.project_name(),
   requires    : ['glib-2.0'],
 )
 
