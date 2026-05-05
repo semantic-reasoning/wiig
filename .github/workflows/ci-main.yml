@@ -1,0 +1,175 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: CI Main
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build-posix:
+    name: build-${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Install build dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            meson ninja-build pkg-config libglib2.0-dev
+
+      - name: Install build dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew update
+          brew install meson ninja pkg-config glib
+
+      - name: Configure
+        run: meson setup builddir -Dwerror=true
+
+      - name: Build
+        run: meson compile -C builddir
+
+      - name: Test
+        run: meson test -C builddir --print-errorlogs --suite unit
+
+      - name: ABI surface check
+        if: runner.os == 'Linux'
+        run: |
+          # The library exports exactly one symbol; commit #1 locked this
+          # invariant. Catch regressions where an internal wg_* symbol
+          # accidentally gets WIIG_PUBLIC-annotated.
+          exported=$(nm -D --defined-only builddir/wiig/libwiig.so.0.1.0 \
+                     | awk '$2=="T"{print $3}' | sort)
+          echo "exported: $exported"
+          test "$exported" = "wiig_version_string"
+
+      - name: Staged install + pkg-config consumer compile
+        if: runner.os == 'Linux'
+        run: |
+          # Mirrors the manual gate the meta-review added in commit f6f50dd:
+          # any external consumer using `pkg-config --cflags wiig` must be
+          # able to compile against the installed umbrella header.
+          DESTDIR=/tmp/stage meson install -C builddir
+          test -f /tmp/stage/usr/local/include/wiig/wiig.h
+          test "$(find /tmp/stage/usr/local/include -type f | wc -l)" = "1"
+          cat > /tmp/consumer.c <<'EOF'
+          #include <stdio.h>
+          #include <wiig/wiig.h>
+          int main(void) {
+              printf("v=%s major=%d\n",
+                     wiig_version_string(), WIIG_VERSION_MAJOR);
+              return 0;
+          }
+          EOF
+          export PKG_CONFIG_PATH=/tmp/stage/usr/local/lib/pkgconfig
+          export LD_LIBRARY_PATH=/tmp/stage/usr/local/lib
+          cflags=$(pkg-config --define-variable=prefix=/tmp/stage/usr/local --cflags wiig)
+          libs=$(pkg-config --define-variable=prefix=/tmp/stage/usr/local --libs wiig)
+          gcc -Wall -Wextra -Werror /tmp/consumer.c -o /tmp/consumer $cflags $libs
+          /tmp/consumer
+
+      - name: Upload meson logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: meson-logs-${{ matrix.os }}
+          path: builddir/meson-logs/
+          if-no-files-found: ignore
+
+  build-windows:
+    name: build-windows
+    runs-on: windows-latest
+    env:
+      VCPKG_ROOT: ${{ github.workspace }}\vcpkg
+      VCPKG_INSTALLED_DIR: ${{ github.workspace }}\vcpkg\installed\x64-windows
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\vcpkg-binary-cache
+      VCPKG_BINARY_SOURCES: "clear;files,${{ github.workspace }}\\vcpkg-binary-cache,readwrite"
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Remove system vcpkg
+        shell: bash
+        run: rm -rf "$VCPKG_INSTALLATION_ROOT"
+
+      - name: Bootstrap vendored vcpkg
+        shell: cmd
+        run: |
+          @echo off
+          git clone --depth 1 --branch 2026.04.27 https://github.com/microsoft/vcpkg.git "%VCPKG_ROOT%"
+          call "%VCPKG_ROOT%\bootstrap-vcpkg.bat" -disableMetrics
+
+      - name: Cache vcpkg binary packages
+        uses: actions/cache@v5
+        with:
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: vcpkg-windows-v1-2026.04.27-x64-windows-glib
+          restore-keys: |
+            vcpkg-windows-v1-2026.04.27-x64-windows-
+
+      - name: Cache vcpkg installed tree
+        uses: actions/cache@v5
+        with:
+          path: ${{ env.VCPKG_ROOT }}\installed
+          key: vcpkg-windows-installed-v1-2026.04.27-x64-windows-glib
+          restore-keys: |
+            vcpkg-windows-installed-v1-2026.04.27-x64-windows-
+
+      - name: Create vcpkg binary cache
+        shell: cmd
+        run: if not exist "%VCPKG_DEFAULT_BINARY_CACHE%" mkdir "%VCPKG_DEFAULT_BINARY_CACHE%"
+
+      - name: Install meson and ninja
+        shell: cmd
+        run: pip install meson ninja
+
+      - name: Install pkg-config (chocolatey)
+        shell: cmd
+        run: choco install pkgconfiglite -y --allow-empty-checksums
+
+      - name: Install C dependencies (vcpkg)
+        shell: cmd
+        run: |
+          @echo off
+          "%VCPKG_ROOT%\vcpkg.exe" install glib:x64-windows --x-abi-tools-use-exact-versions
+
+      - name: Configure (clang-cl)
+        shell: cmd
+        run: |
+          @echo off
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          set PKG_CONFIG_PATH=%VCPKG_INSTALLED_DIR%\lib\pkgconfig
+          set CC=clang-cl
+          meson setup builddir -Ddefault_library=static -Dwerror=true
+
+      - name: Build and test (clang-cl)
+        shell: cmd
+        run: |
+          @echo off
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          meson test -C builddir --print-errorlogs --suite unit
+
+      - name: Upload meson logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: meson-logs-windows
+          path: builddir/meson-logs/
+          if-no-files-found: ignore
