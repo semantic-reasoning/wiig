@@ -22,10 +22,19 @@ subdir('lexer')
 # ----------------------------------------------------------------------------
 # Library
 # ----------------------------------------------------------------------------
+# When the lib is built as a static archive, both the library and its
+# consumers must see plain (non-dllimport) declarations on Windows.
+# Propagate WIIG_STATIC to consumers via wiig_dep and to downstream
+# pkg-config users via extra_cflags below.
+wiig_static_args = []
+if get_option('default_library') == 'static'
+  wiig_static_args += '-DWIIG_STATIC'
+endif
+
 libwiig = library('wiig',
   wiig_sources,
   include_directories    : [wiig_inc, wiig_src_inc],
-  c_args                 : ['-DWIIG_BUILDING'],
+  c_args                 : ['-DWIIG_BUILDING'] + wiig_static_args,
   gnu_symbol_visibility  : 'hidden',
   dependencies           : [glib_dep],
   version                : meson.project_version(),
@@ -40,5 +49,6 @@ install_headers(wiig_public_headers, subdir : 'wiig')
 wiig_dep = declare_dependency(
   link_with           : libwiig,
   include_directories : [wiig_inc, wiig_src_inc],
+  compile_args        : wiig_static_args,
   dependencies        : [glib_dep],
 )

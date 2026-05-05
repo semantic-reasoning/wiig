@@ -48,12 +48,15 @@ pkg = import('pkgconfig')
 # header itself uses for `<wiig/wiig-export.h>`) compile against the
 # installed headers via `pkg-config --cflags wiig`. Setting `subdirs`
 # would produce `-I${includedir}/wiig` and break that include style.
+# extra_cflags carries WIIG_STATIC into downstream consumers when the
+# library is built static (see wiig/meson.build).
 pkg.generate(libwiig,
   name        : meson.project_name(),
   description : project_description,
   version     : meson.project_version(),
   filebase    : meson.project_name(),
   requires    : ['glib-2.0'],
+  extra_cflags : wiig_static_args,
 )
 
 # ----------------------------------------------------------------------------

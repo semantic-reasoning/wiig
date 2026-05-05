@@ -36,7 +36,11 @@ extern "C" {
  * correctly.
  */
 #if defined(_WIN32) || defined(__CYGWIN__)
-  #ifdef WIIG_BUILDING
+  #if defined(WIIG_STATIC)
+    /* Static archive on Windows: neither dllexport nor dllimport.
+     * The library and its consumers both see plain declarations. */
+    #define WIIG_PUBLIC
+  #elif defined(WIIG_BUILDING)
     #define WIIG_PUBLIC __declspec(dllexport)
   #else
     #define WIIG_PUBLIC __declspec(dllimport)

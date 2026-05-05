@@ -11,6 +11,11 @@ test('skeleton', test_skeleton, suite : 'unit')
 # gnu_symbol_visibility=hidden setting. This keeps the test self-
 # contained regardless of whether the library is built shared, static,
 # or both.
+# meson.current_source_dir() uses backslashes on Windows, which would
+# corrupt the C string literal (\a, \t, \w treated as escape sequences).
+# Normalise to forward slashes; fopen accepts both on every platform.
+fixture_dir = meson.current_source_dir().replace('\\', '/') + '/fixtures'
+
 test_lexer = executable('test_lexer',
   files(
     'test_lexer.c',
@@ -18,7 +23,7 @@ test_lexer = executable('test_lexer',
   ),
   include_directories : [wiig_inc, wiig_src_inc],
   c_args              : [
-    '-DWG_FIXTURE_DIR="' + meson.current_source_dir() / 'fixtures' + '"',
+    '-DWG_FIXTURE_DIR="' + fixture_dir + '"',
   ],
   dependencies        : [glib_dep],
   install             : false,
