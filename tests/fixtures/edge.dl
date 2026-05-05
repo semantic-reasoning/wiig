@@ -1,0 +1,28 @@
+// edge.dl - lexer edge-case fixture.
+//
+// Hand-crafted to exercise paths that the wirelog example fixtures
+// do not: hash-style comments, underscore-wildcard variants, integer
+// literals at the int64 boundary, the .foo unknown-directive rollback,
+// tab indentation, and a multi-line block comment with code following.
+
+# alternative line-comment style (hash) - wirelog accepts this too.
+
+/*
+ * Multi-line block comment. wiig accepts this as BLOCK_COMMENT trivia
+ * even though wirelog's lexer treats /* */ as operator soup. The
+ * formatter must preserve these bytes intact.
+ */
+
+.decl edge(_x: int32, _: symbol, value: int64)
+.decl __derived(a: int32, b: int32)
+
+/* leading-underscore identifier, bare wildcard, double underscore. */
+edge(0, "x", 9223372036854775807).
+edge(1, "y", 0).
+
+/* Underscore disambiguation: _x is IDENT, _ is UNDERSCORE wildcard. */
+__derived(X, Y) :- edge(X, _, _), Y = X.
+
+/* Unknown directive must roll back to DOT + IDENT. */
+.foobar
+edge(2, "z", 42).

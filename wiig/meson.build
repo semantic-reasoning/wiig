@@ -14,6 +14,11 @@ wiig_sources = files(
   'wg-version.c',
 )
 
+# Internal subsystems extend wiig_sources via subdir(). None of the
+# headers under these subdirs are installed; the umbrella header in
+# wiig_public_headers is the entire public surface.
+subdir('lexer')
+
 # ----------------------------------------------------------------------------
 # Library
 # ----------------------------------------------------------------------------
