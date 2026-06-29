@@ -21,7 +21,7 @@ meson test -C builddir
 
 The build requires:
 
-- a C17 compiler (GCC, Clang, or MSVC ≥ VS 2019)
+- a C17 compiler: GCC, Clang, or (on Windows) clang-cl with the MSVC toolchain
 - Meson `>= 1.1.0`
 - GLib `>= 2.68` development headers
 
