@@ -115,6 +115,10 @@ typedef enum {
     WG_TOKEN_UUID4,                 /* uuid4 */
     WG_TOKEN_UUID5,                 /* uuid5 */
 
+    /* CRC-32 checksum keywords -------------------------------------------- */
+    WG_TOKEN_CRC32_ETH,             /* crc32_ethernet */
+    WG_TOKEN_CRC32_CAST,            /* crc32_castagnoli */
+
     /* String function keywords -------------------------------------------- */
     WG_TOKEN_STRLEN,                /* strlen */
     WG_TOKEN_CAT,                   /* cat */

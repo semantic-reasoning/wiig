@@ -233,6 +233,9 @@ static const wg_keyword_t WG_KEYWORDS[] = {
     /* uuid */
     { "uuid4",        5,  WG_TOKEN_UUID4 },
     { "uuid5",        5,  WG_TOKEN_UUID5 },
+    /* crc-32 */
+    { "crc32_ethernet",   14, WG_TOKEN_CRC32_ETH },
+    { "crc32_castagnoli", 16, WG_TOKEN_CRC32_CAST },
     /* string fns */
     { "strlen",       6,  WG_TOKEN_STRLEN },
     { "cat",          3,  WG_TOKEN_CAT },
@@ -552,6 +555,8 @@ wg_lexer_token_kind_str(wg_lexer_token_kind_t kind)
     case WG_TOKEN_HMAC_SHA256:         return "HMAC_SHA256";
     case WG_TOKEN_UUID4:               return "UUID4";
     case WG_TOKEN_UUID5:               return "UUID5";
+    case WG_TOKEN_CRC32_ETH:           return "CRC32_ETHERNET";
+    case WG_TOKEN_CRC32_CAST:          return "CRC32_CASTAGNOLI";
     case WG_TOKEN_STRLEN:              return "STRLEN";
     case WG_TOKEN_CAT:                 return "CAT";
     case WG_TOKEN_SUBSTR:              return "SUBSTR";

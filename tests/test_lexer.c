@@ -190,6 +190,8 @@ test_keywords(void)
         { "sha256",     WG_TOKEN_SHA256 },
         { "hmac_sha256",WG_TOKEN_HMAC_SHA256 },
         { "uuid4",      WG_TOKEN_UUID4 },
+        { "crc32_ethernet",   WG_TOKEN_CRC32_ETH },
+        { "crc32_castagnoli", WG_TOKEN_CRC32_CAST },
         { "strlen",     WG_TOKEN_STRLEN },
         { "str_prefix", WG_TOKEN_STR_PREFIX },
         { "to_string",  WG_TOKEN_TO_STRING },
