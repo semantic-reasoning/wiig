@@ -286,6 +286,31 @@ test_integer_and_string(void)
 }
 
 static int
+test_string_escapes(void)
+{
+    /* \" and \\ are escaped bytes inside a string and must not end it.
+     * The token spans the whole literal, raw bytes preserved (no decode). */
+    expect_t e1[] = {
+        { WG_TOKEN_STRING, "\"a\\\"b\"" },   /* source: "a\"b"  */
+        { WG_TOKEN_EOF,    NULL },
+    };
+    expect_t e2[] = {
+        { WG_TOKEN_STRING, "\"a\\\\\"" },    /* source: "a\\"   */
+        { WG_TOKEN_EOF,    NULL },
+    };
+    /* A lone trailing backslash before the closing quote escapes that
+     * quote, so the literal is unterminated -> ERROR. */
+    expect_t e3[] = {
+        { WG_TOKEN_ERROR, NULL },            /* source: "a\"    */
+    };
+    int rc = 0;
+    rc |= expect_stream("string_escape_quote", "\"a\\\"b\"", e1, 2);
+    rc |= expect_stream("string_escape_backslash", "\"a\\\\\"", e2, 2);
+    rc |= expect_stream("string_escape_unterminated", "\"a\\\"", e3, 1);
+    return rc;
+}
+
+static int
 test_comments(void)
 {
     /* Hash comment, slash comment, block comment, all preserved as trivia. */
@@ -498,6 +523,7 @@ main(void)
         test_unknown_directive_rollback,
         test_underscore_disambiguation,
         test_integer_and_string,
+        test_string_escapes,
         test_comments,
         test_block_comment_multiline,
         test_crlf,

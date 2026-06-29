@@ -159,8 +159,19 @@ scan_block_comment(wg_lexer_t *lex)
 static wg_lexer_token_t
 scan_string(wg_lexer_t *lex)
 {
-    /* Opening quote already consumed. */
+    /* Opening quote already consumed. A backslash that escapes a quote
+     * or another backslash (\" or \\) does not terminate the literal;
+     * wirelog gained this rule with its string-escape fix. wiig keeps
+     * the bytes raw (it is a formatter, not an evaluator) but must not
+     * stop early on an escaped quote, else the trailing bytes lex as
+     * stray tokens and an unterminated string. */
     while (!at_end(lex) && peek(lex) != '"') {
+        if (peek(lex) == '\\'
+            && (peek_at(lex, 1) == '"' || peek_at(lex, 1) == '\\')) {
+            advance(lex); /* backslash */
+            advance(lex); /* the escaped '"' or '\\' */
+            continue;
+        }
         if (peek(lex) == '\n') {
             /* Unterminated on this line: emit ERROR for what we have. */
             return make_token(lex, WG_TOKEN_ERROR);
